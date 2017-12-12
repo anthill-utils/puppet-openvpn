@@ -491,6 +491,7 @@ define openvpn::server(
   $tls_auth                  = false,
   $tls_server                = false,
   $tls_client                = false,
+  $tls_version_min           = undef,
   $server_poll_timeout       = undef,
   $ping_timer_rem            = false,
   $sndbuf                    = undef,
@@ -508,7 +509,7 @@ define openvpn::server(
   $ns_cert_type              = true,
   $nobind                    = false,
   $secret                    = undef,
-  $custom_options            = {},
+  $custom_options            = {}
 ) {
 
   include openvpn
@@ -633,7 +634,8 @@ define openvpn::server(
     file {
       [ "${etc_directory}/openvpn/${name}/auth",
       "${etc_directory}/openvpn/${name}/client-configs",
-      "${etc_directory}/openvpn/${name}/download-configs" ]:
+      "${etc_directory}/openvpn/${name}/download-configs",
+      "${etc_directory}/openvpn/${name}/export-configs" ]:
         ensure  => directory,
         mode    => '0750',
         recurse => true,
@@ -647,6 +649,7 @@ define openvpn::server(
       mode    => '0750',
       recurse => true,
     }
+
   }
 
   if $::osfamily == 'Debian' and !$::openvpn::autostart_all and $autostart {

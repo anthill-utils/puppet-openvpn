@@ -111,6 +111,9 @@ cipher <%= @cipher %>
 <% if @tls_cipher -%>
 tls-cipher <%= @tls_cipher %>
 <% end -%>
+<% if @tls_version_min -%>
+tls-version-min <%= @tls_version_min %>
+<% end -%>
 <% if @c2c -%>
 client-to-client
 <% end -%>

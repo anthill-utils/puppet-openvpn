@@ -216,7 +216,8 @@ define openvpn::client(
   $expire               = undef,
   $readme               = undef,
   $pull                 = false,
-  $server_extca_enabled = false
+  $server_extca_enabled = false,
+  $download_configs_owner = undef
 ) {
 
   if $pam {
@@ -258,25 +259,76 @@ define openvpn::client(
     ensure  => directory,
   }
 
+  file { "${etc_directory}/openvpn/${server}/export-configs/${name}":
+    ensure  => directory,
+  }
+
+  file { "${etc_directory}/openvpn/${server}/export-configs/${name}/${name}.crt":
+    ensure  => link,
+    target  => "${etc_directory}/openvpn/${ca_name}/easy-rsa/keys/${name}.crt",
+    require => [
+      File["${etc_directory}/openvpn/${server}/export-configs/${name}"],
+      Exec["generate certificate for ${name} in context of ${ca_name}"],
+    ],
+    owner => $download_configs_owner
+  }
+
   file { "${etc_directory}/openvpn/${server}/download-configs/${name}/keys/${name}/${name}.crt":
     ensure  => link,
     target  => "${etc_directory}/openvpn/${ca_name}/easy-rsa/keys/${name}.crt",
     require => Exec["generate certificate for ${name} in context of ${ca_name}"],
+    owner => $download_configs_owner
+  }
+
+  file { "${etc_directory}/openvpn/${server}/export-configs/${name}/${name}.key":
+    ensure  => link,
+    target  => "${etc_directory}/openvpn/${ca_name}/easy-rsa/keys/${name}.key",
+    require => [
+      File["${etc_directory}/openvpn/${server}/export-configs/${name}"],
+      Exec["generate certificate for ${name} in context of ${ca_name}"],
+    ],
+    owner => $download_configs_owner
   }
 
   file { "${etc_directory}/openvpn/${server}/download-configs/${name}/keys/${name}/${name}.key":
     ensure  => link,
     target  => "${etc_directory}/openvpn/${ca_name}/easy-rsa/keys/${name}.key",
     require => Exec["generate certificate for ${name} in context of ${ca_name}"],
+    owner => $download_configs_owner
+  }
+
+  file { "${etc_directory}/openvpn/${server}/export-configs/${name}/ca.crt":
+    ensure  => link,
+    target  => "${etc_directory}/openvpn/${ca_name}/easy-rsa/keys/ca.crt",
+    require => [
+      File["${etc_directory}/openvpn/${server}/export-configs/${name}"],
+      Exec["generate certificate for ${name} in context of ${ca_name}"],
+    ],
+    owner => $download_configs_owner
   }
 
   file { "${etc_directory}/openvpn/${server}/download-configs/${name}/keys/${name}/ca.crt":
     ensure  => link,
     target  => "${etc_directory}/openvpn/${ca_name}/easy-rsa/keys/ca.crt",
     require => Exec["generate certificate for ${name} in context of ${ca_name}"],
+    owner => $download_configs_owner
   }
 
   if $tls_auth {
+    file { "${etc_directory}/openvpn/${server}/export-configs/${name}/ta.key":
+      ensure  => link,
+      target  => "${etc_directory}/openvpn/${server}/easy-rsa/keys/ta.key",
+      require => [
+        File["${etc_directory}/openvpn/${server}/export-configs/${name}"],
+        Exec["generate certificate for ${name} in context of ${ca_name}"],
+      ],
+      before  => [
+        Exec["tar the thing ${server} with ${name}"],
+        Concat["${etc_directory}/openvpn/${server}/download-configs/${name}.ovpn"],
+      ],
+      notify  => Exec["tar the thing ${server} with ${name}"],
+    }
+
     file { "${etc_directory}/openvpn/${server}/download-configs/${name}/keys/${name}/ta.key":
       ensure  => link,
       target  => "${etc_directory}/openvpn/${server}/easy-rsa/keys/ta.key",
